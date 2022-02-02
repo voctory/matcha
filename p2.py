@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 
-preferences = {}
+X_preferences = {}
+Y_preferences = {}
 
 # init dict of X and Y for Gale Shapley
 # X = boys
@@ -27,11 +28,9 @@ df = pd.DataFrame({
 # Adding a normalized field 'k_scr' for kitchen
 df['k_scr'] = np.where((df['kitchen'] == 2), 0.5, df['kitchen'])
 
-# Adding a normalized field 'f_scr' for food
-df['f_scr'] = np.where((df['food'] == 1), 0, df['food'])
-df['f_scr'] = np.where((df['food'] == 0), -1, df['f_scr'])
-df['f_scr'] = np.where((df['food'] == 2), 1, df['f_scr'])
-df['f_scr'] = np.where((df['food'] == 3), 1, df['f_scr'])
+# Adding a normalized field 's_scr' for sex
+df['s_scr'] = np.where((df['sex'] == "m"), 1, df['sex'])
+df['s_scr'] = np.where((df['sex'] == "f"), 2, df['s_scr'])
 
 # Adding a normalized field 'a_scr' for age
 df['a_scr'] = np.where((df['age'] == '10-18'), 1, df['age'])
@@ -48,27 +47,28 @@ commonarr = [] # Empty array for our output
 dfarr = np.array(df) # Converting DataFrame to Numpy Array
 for i in range(len(dfarr)): # Iterating the Array row
     name = dfarr[i][0]
-    preferences[name] = []
     if dfarr[i][1] == "m": 
         # adding to X set
         X.add(name)
+        X_preferences[name] = []
     else:
         # yeah
         Y.add(name)
+        Y_preferences[name] = []
 
     for j in range(i + 1, len(dfarr)): # Iterating the Array row + 1
-        # Check for Food Condition to include relevant records
-        if dfarr[i][6] * dfarr[j][6] >= 0: 
-            # Check for Kitchen Condition to include relevant records
+        # check genders are not equal :(
+        if dfarr[i][6] + dfarr[j][6] == 3:
             if dfarr[i][5] + dfarr[j][5] > 0:
                 row = []
                 # Appending the names
                 row.append(dfarr[i][0])
                 row.append(dfarr[j][0])
                 # Appending the final score
-                row.append((dfarr[i][6] * dfarr[j][6]) +
-                           (dfarr[i][5] + dfarr[j][5]) +
-                           (round((1 - (abs(dfarr[i][7] -
+                row.append(1 +
+                        (dfarr[i][5] + dfarr[j][5]) +
+                        # ages
+                        (round((1 - (abs(dfarr[i][7] -
                                             dfarr[j][7]) / 10)), 2)))
 
                 # Appending the row to the Final Array
@@ -81,8 +81,16 @@ ndf = pd.DataFrame(commonarr)
 ndf = ndf.sort_values(by=[2], ascending=False)
 people = np.array(ndf)
 
-for i in range(len(people) - 1): # Iterating the Array row to add both pairs of people to their list of preferences
-    preferences[people[i][0]].append(people[i][1])
-    preferences[people[i][1]].append(people[i][0])
 
-print(Y)
+# Scuffed implementation: searching each set by name and figuring out who's who
+
+# print(people)
+
+for i in range(len(people) - 1): # Iterating the Array row to add both pairs of people to their list of preferences
+    if people[i][0] in X:
+        X_preferences[people[i][0]].append(people[i][1])
+        Y_preferences[people[i][1]].append(people[i][0])
+    else:
+        X_preferences[people[i][1]].append(people[i][0])
+        Y_preferences[people[i][0]].append(people[i][1])
+    
