@@ -22,10 +22,10 @@ df = pd.DataFrame({
              'Woman', 'Man', 'Woman', 'Man', 'Woman', 'Man', 'Man'],
     'prefs' : ['Woman', 'Man', 'Woman', 'Man', 'Woman', 'Man', 'Man', 'Woman', 'Man', 'Woman', 'Woman', 'Woman', 'Man', 
              'Man', 'Woman', 'Man', 'Woman', 'Man', 'Woman', 'Woman'],
-    'food' : [0, 0, 1, 3, 2, 3, 1, 0, 0, 3, 3, 2, 1, 2, 1, 0, 1, 0, 3, 1],
     'year' : ['1', '3', '5', '6+', '2', '6+', '6+',
              '5', '4', '4', '2', '6+', '3', '5', 
              '1', '3', '5', '4', '1', '5'],
+    'food' : [0, 0, 1, 3, 2, 3, 1, 0, 0, 3, 3, 2, 1, 2, 1, 0, 1, 0, 3, 1],
     'kitchen' : [0, 1, 2, 0, 1, 2, 2, 1, 0, 0, 1, 0, 1, 1, 1, 0, 2, 0, 2, 1],
 })
 
@@ -33,8 +33,7 @@ df = pd.DataFrame({
 df['k_scr'] = np.where((df['kitchen'] == 2), 0.5, df['kitchen'])
 
 # Adding a normalized field 's_scr' for sex
-df['s_scr'] = np.where((df['sex'] == "No preference"), 0, df['sex'])
-df['s_scr'] = np.where((df['sex'] == "Man"), -1, df['s_scr'])
+df['s_scr'] = np.where((df['sex'] == "Man"), -1, df['sex'])
 df['s_scr'] = np.where((df['sex'] == "Male"), -1, df['s_scr'])
 df['s_scr'] = np.where((df['sex'] == "Woman"), 1, df['s_scr'])
 df['s_scr'] = np.where((df['sex'] == "Female"), 1, df['s_scr'])
@@ -80,9 +79,13 @@ for i in range(len(dfarr)): # Iterating the Array row
         pref1 = 0
         pref2 = 0
         if dfarr[i][7] == dfarr[j][8]: pref1 += 1
+        elif dfarr[j][8] == "No preference": pref1 += 0.8
         if dfarr[i][8] == dfarr[j][7]: pref2 += 1
+        elif dfarr[i][8] == "No preference": pref2 += 0.8
+
+        score = pref1 + pref2
         if pref1 == pref2:
-            pref1 *= 2
+            score *= 3
 
         row = []
         # Appending the names
@@ -90,8 +93,7 @@ for i in range(len(dfarr)): # Iterating the Array row
         row.append(dfarr[j][0])
         # Appending the final score
         row.append(
-                pref1 +
-                pref2 +
+                score +
                 (dfarr[i][6] * dfarr[j][6]) +
                 (dfarr[i][5] + dfarr[j][5]) +
                 # years
@@ -122,7 +124,6 @@ for i in people:
     names_taken.append(i[1])
     determine.append(i)
 
-# TODO: make less restrictive; currently limited by number of X or number of Y. make it score-based instead
 print(determine)
 
 # for i in range(len(people) - 1): # Iterating the Array row to add both pairs of people to their list of preferences
