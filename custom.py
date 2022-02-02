@@ -23,9 +23,9 @@ df = pd.DataFrame({
     'prefs' : ['Woman', 'Man', 'Woman', 'Man', 'Woman', 'Man', 'Man', 'Woman', 'Man', 'Woman', 'Woman', 'Woman', 'Man', 
              'Man', 'Woman', 'Man', 'Woman', 'Man', 'Woman', 'Woman'],
     'food' : [0, 0, 1, 3, 2, 3, 1, 0, 0, 3, 3, 2, 1, 2, 1, 0, 1, 0, 3, 1],
-    'age' : ['10-18', '22-26', '29-34', '40-45', '18-22', '34-40', '55-75',
-             '45-55', '26-29', '26-29', '18-22', '55-75', '22-26', '45-55', 
-             '10-18', '22-26', '40-45', '45-55', '10-18', '29-34'],
+    'year' : ['1', '3', '5', '6+', '2', '6+', '6+',
+             '5', '4', '4', '2', '6+', '3', '5', 
+             '1', '3', '5', '4', '1', '5'],
     'kitchen' : [0, 1, 2, 0, 1, 2, 2, 1, 0, 0, 1, 0, 1, 1, 1, 0, 2, 0, 2, 1],
 })
 
@@ -46,16 +46,13 @@ df['p_scr'] = np.where((df['prefs'] == "Male"), -1, df['p_scr'])
 df['p_scr'] = np.where((df['prefs'] == "Woman"), 1, df['p_scr'])
 df['p_scr'] = np.where((df['prefs'] == "Female"), 1, df['p_scr'])
 
-# Adding a normalized field 'a_scr' for age
-df['a_scr'] = np.where((df['age'] == '10-18'), 1, df['age'])
-df['a_scr'] = np.where((df['age'] == '18-22'), 2, df['a_scr'])
-df['a_scr'] = np.where((df['age'] == '22-26'), 3, df['a_scr'])
-df['a_scr'] = np.where((df['age'] == '26-29'), 4, df['a_scr'])
-df['a_scr'] = np.where((df['age'] == '29-34'), 5, df['a_scr'])
-df['a_scr'] = np.where((df['age'] == '34-40'), 6, df['a_scr'])
-df['a_scr'] = np.where((df['age'] == '40-45'), 7, df['a_scr'])
-df['a_scr'] = np.where((df['age'] == '45-55'), 8, df['a_scr'])
-df['a_scr'] = np.where((df['age'] == '55-75'), 9, df['a_scr'])
+# Adding a normalized field 'a_scr' for year
+df['a_scr'] = np.where((df['year'] == '1'), 1, df['year'])
+df['a_scr'] = np.where((df['year'] == '2'), 3, df['a_scr'])
+df['a_scr'] = np.where((df['year'] == '3'), 5, df['a_scr'])
+df['a_scr'] = np.where((df['year'] == '4'), 7, df['a_scr'])
+df['a_scr'] = np.where((df['year'] == '5'), 8, df['a_scr'])
+df['a_scr'] = np.where((df['year'] == '6+'), 9, df['a_scr'])
 
 commonarr = [] # Empty array for our output
 dfarr = np.array(df) # Converting DataFrame to Numpy Array
@@ -77,21 +74,32 @@ for i in range(len(dfarr)): # Iterating the Array row
         # old: if dfarr[i][6] * dfarr[j][6] <= 0:
         #print(f'${dfarr[i][0]} - ${dfarr[i][9]}')
         # if this is too restrictive, could make optional and instead add to score
-        if dfarr[i][7] == dfarr[j][8] and dfarr[i][8] == dfarr[j][7]:
-            if dfarr[i][5] + dfarr[j][5] > 0:
-                row = []
-                # Appending the names
-                row.append(dfarr[i][0])
-                row.append(dfarr[j][0])
-                # Appending the final score
-                row.append(abs((dfarr[i][6] * dfarr[j][6])) +
-                        (dfarr[i][5] + dfarr[j][5]) +
-                        # ages
-                        (round((1 - (abs(dfarr[i][9] -
-                                            dfarr[j][9]) / 10)), 2)))
+        #if dfarr[i][7] == dfarr[j][8] and dfarr[i][8] == dfarr[j][7]:
+        # ^ ideal, need to have below if nested inside
 
-                # Appending the row to the Final Array
-                commonarr.append(row)
+        pref1 = 0
+        pref2 = 0
+        if dfarr[i][7] == dfarr[j][8]: pref1 += 1
+        if dfarr[i][8] == dfarr[j][7]: pref2 += 1
+        if pref1 == pref2:
+            pref1 *= 2
+
+        row = []
+        # Appending the names
+        row.append(dfarr[i][0])
+        row.append(dfarr[j][0])
+        # Appending the final score
+        row.append(
+                pref1 +
+                pref2 +
+                (dfarr[i][6] * dfarr[j][6]) +
+                (dfarr[i][5] + dfarr[j][5]) +
+                # years
+                (round((1 - (abs(dfarr[i][9] -
+                                    dfarr[j][9]) / 10)), 2)))
+
+        # Appending the row to the Final Array
+        commonarr.append(row)
 
 # Converting Array to DataFrame
 ndf = pd.DataFrame(commonarr)
