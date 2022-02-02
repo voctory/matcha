@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+preferences = {}
+
 # Creating the DataFrame, here I have added the attribute 'name' for identifying the record.
 df = pd.DataFrame({
     'name' : ['jacob', 'mary', 'rick', 'emily', 'sabastein', 'anna', 
@@ -38,7 +40,8 @@ df['a_scr'] = np.where((df['age'] == '55-75'), 9, df['a_scr'])
 
 commonarr = [] # Empty array for our output
 dfarr = np.array(df) # Converting DataFrame to Numpy Array
-for i in range(len(dfarr) - 1): # Iterating the Array row
+for i in range(len(dfarr)): # Iterating the Array row
+    preferences[dfarr[i][0]] = []
     for j in range(i + 1, len(dfarr)): # Iterating the Array row + 1
         # Check for Food Condition to include relevant records
         if dfarr[i][6] * dfarr[j][6] >= 0: 
@@ -65,4 +68,7 @@ ndf = ndf.sort_values(by=[2], ascending=False)
 people = np.array(ndf)
 
 for i in range(len(people) - 1): # Iterating the Array row to add both pairs of people to their list of preferences
-    print(people[i][1])
+    preferences[people[i][0]].append(people[i][1])
+    preferences[people[i][1]].append(people[i][0])
+
+print(preferences)
