@@ -12,17 +12,19 @@ Y_preferences = {}
 X = set()
 Y = set()
 
+names = ['jacob', 'mary', 'rick', 'emily', 'sabastein', 'anna', 
+              'tina', 'allen', 'jolly', 'rock', 'smith', 'waterman', 
+              'mimi', 'katie', 'john', 'rose', 'leonardo', 'cynthia', 'jim', 
+              'paul']
+
 # Creating the DataFrame, here I have added the attribute 'name' for identifying the record.
 df = pd.DataFrame({
-    'name' : ['jacob', 'mary', 'rick', 'emily', 'sabastein', 'anna', 
-              'christina', 'allen', 'jolly', 'rock', 'smith', 'waterman', 
-              'mimi', 'katie', 'john', 'rose', 'leonardo', 'cinthy', 'jim', 
-              'paul'],
+    'name' : names,
     'sex' : ['Man', 'Woman', 'Man', 'Woman', 'Man', 'Woman', 'Woman', 'Man', 'Woman', 'Man', 'Man', 'Man', 'Woman', 
              'Woman', 'Man', 'Woman', 'Man', 'Woman', 'Man', 'Man'],
     'prefs' : ['Woman', 'Man', 'Woman', 'Man', 'Woman', 'Man', 'Man', 'Woman', 'Man', 'Woman', 'Woman', 'Woman', 'Man', 
-             'Man', 'Woman', 'Man', 'Woman', 'Man', 'Woman', 'Woman'],
-    'year' : ['1', '3', '5', '6+', '2', '6+', '6+',
+             'Man', 'Woman', 'Man', 'Woman', 'Man', 'Woman', 'No preference'],
+    'year' : ['4', '3', '5', '6+', '2', '6+', '6+',
              '5', '4', '4', '2', '6+', '3', '5', 
              '1', '3', '5', '4', '1', '5'],
     'food' : [0, 0, 1, 3, 2, 3, 1, 0, 0, 3, 3, 2, 1, 2, 1, 0, 1, 0, 3, 1],
@@ -56,16 +58,6 @@ df['a_scr'] = np.where((df['year'] == '6+'), 9, df['a_scr'])
 commonarr = [] # Empty array for our output
 dfarr = np.array(df) # Converting DataFrame to Numpy Array
 for i in range(len(dfarr)): # Iterating the Array row
-    name = dfarr[i][0]
-    if dfarr[i][1] == "Man": 
-        # adding to X set
-        X.add(name)
-        X_preferences[name] = []
-    else:
-        # yeah
-        Y.add(name)
-        Y_preferences[name] = []
-
     for j in range(i + 1, len(dfarr)): # Iterating the Array row + 1
         # check preferences align. THIS IS PROBABLY REALLY CRITICAL :)
         # TODO: gender not taken into consideration, naive solution
@@ -75,33 +67,31 @@ for i in range(len(dfarr)): # Iterating the Array row
         # if this is too restrictive, could make optional and instead add to score
         #if dfarr[i][7] == dfarr[j][8] and dfarr[i][8] == dfarr[j][7]:
         # ^ ideal, need to have below if nested inside
+        c1 = dfarr[i][7] == dfarr[j][8] and dfarr[i][8] == dfarr[j][7]
+        c2 = dfarr[j][7] == dfarr[i][8] and dfarr[j][8] == 0
+        c3 = 0 == dfarr[i][8] and dfarr[j][8] == dfarr[i][7]
+        c4 = 0 == dfarr[j][8] and dfarr[i][8] == 0
 
-        pref1 = 0
-        pref2 = 0
-        if dfarr[i][7] == dfarr[j][8]: pref1 += 1
-        elif dfarr[j][8] == "No preference": pref1 += 0.8
-        if dfarr[i][8] == dfarr[j][7]: pref2 += 1
-        elif dfarr[i][8] == "No preference": pref2 += 0.8
+        if c1 or c2 or c3 or c4:
+            # if dfarr[i][7] == dfarr[j][8] and dfarr[i][8] == dfarr[j][7]: pref += 6
+            # if dfarr[j][7] == dfarr[i][8] and dfarr[j][8] == 0: pref += 6
+            # if 0 == dfarr[i][8] and dfarr[j][8] == dfarr[i][7]: pref += 6
+            # if 0 == dfarr[j][8] and dfarr[i][8] == 0: pref += 6
 
-        score = pref1 + pref2
-        if pref1 == pref2:
-            score *= 3
+            row = []
+            # Appending the names
+            row.append(dfarr[i][0])
+            row.append(dfarr[j][0])
+            # Appending the final score
+            row.append(
+                    (dfarr[i][6] * dfarr[j][6]) +
+                    (dfarr[i][5] + dfarr[j][5]) +
+                    # years
+                    (round((1 - (abs(dfarr[i][9] -
+                                        dfarr[j][9]) / 10)), 2)))
 
-        row = []
-        # Appending the names
-        row.append(dfarr[i][0])
-        row.append(dfarr[j][0])
-        # Appending the final score
-        row.append(
-                score +
-                (dfarr[i][6] * dfarr[j][6]) +
-                (dfarr[i][5] + dfarr[j][5]) +
-                # years
-                (round((1 - (abs(dfarr[i][9] -
-                                    dfarr[j][9]) / 10)), 2)))
-
-        # Appending the row to the Final Array
-        commonarr.append(row)
+            # Appending the row to the Final Array
+            commonarr.append(row)
 
 # Converting Array to DataFrame
 ndf = pd.DataFrame(commonarr)
@@ -116,15 +106,45 @@ people = np.array(ndf)
 determine = []
 names_taken = []
 
-# ideas: filter out people by their emails. no identical names problem
-for i in people:
-    if i[0] in names_taken or i[1] in names_taken:
-        continue
-    names_taken.append(i[0])
-    names_taken.append(i[1])
-    determine.append(i)
+# "name" is a guaranteed match, brute forcing optimal matches
+def match(name, determine, brute_taken): # Iterating the Array row
+    output = ''
+    names_taken = brute_taken.copy()
 
-print(determine)
+    # optimal for person with input name
+    optimal = []
+
+    # ideas: filter out people by their emails. no identical names problem
+    for i in people:
+        if (i[0] == name or i[1] == name) and len(optimal) == 0 and (i[0] not in names_taken or i[1] not in names_taken): 
+            print(i)
+            optimal = i
+            determine.append(i)
+            output += f'\n{i[0]} and {i[1]} with {i[2]} (brute-force) confidence.'
+            names_taken.append(i[0])
+            names_taken.append(i[1])
+            brute_taken.append(i[0])
+            brute_taken.append(i[1])
+
+        if i[0] in names_taken or i[1] in names_taken:
+            continue
+        names_taken.append(i[0])
+        names_taken.append(i[1])
+        determine.append(i)
+        output += f'\n{i[0]} and {i[1]} with {i[2]} (perfect) confidence.'
+
+    # determine unmatched after matching
+    unmatched = set(names).difference(names_taken)
+
+    print(output)
+
+    if unmatched:
+        # Should automatically figure out how to re-do matches if sub-optimal
+        match(unmatched.pop(), determine, brute_taken)
+
+    else: print('All matched!')
+
+match("", determine, names_taken)
 
 # for i in range(len(people) - 1): # Iterating the Array row to add both pairs of people to their list of preferences
 #     if people[i][0] in X:
